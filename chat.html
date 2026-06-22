@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>چت با سُها | دستیار هوشمند</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        skyblue: '#00a2ff',
+                        iceberg: '#dff4ff',
+                        darktech: '#030816',
+                        cardbg: 'rgba(255,255,255,0.04)',
+                        cardline: 'rgba(130, 190, 255, 0.16)'
+                    },
+                    fontFamily: {
+                        sans: ['Vazirmatn', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        glow: '0 20px 60px rgba(0,162,255,0.16)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;700;800;900&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg0: #020611;
+            --bg1: #040c18;
+            --bg2: #071426;
+            --line: rgba(142, 198, 255, .12);
+            --glass: rgba(255,255,255,.05);
+            --glass-strong: rgba(255,255,255,.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', sans-serif;
+            overflow: hidden;
+            color: #fff;
+            background:
+                radial-gradient(1000px 700px at 15% 15%, rgba(0,162,255,.14), transparent 52%),
+                radial-gradient(900px 700px at 85% 18%, rgba(124,58,237,.10), transparent 48%),
+                radial-gradient(900px 700px at 50% 90%, rgba(0,162,255,.08), transparent 40%),
+                linear-gradient(180deg, var(--bg0) 0%, var(--bg1) 40%, var(--bg2) 100%);
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                linear-gradient(115deg, transparent 0%, rgba(255,255,255,.04) 25%, transparent 50%),
+                linear-gradient(290deg, transparent 0%, rgba(255,255,255,.025) 33%, transparent 58%);
+            mix-blend-mode: screen;
+            opacity: .38;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(255,255,255,.065) 0 1px, transparent 1.2px),
+                radial-gradient(circle at 60% 70%, rgba(255,255,255,.045) 0 1px, transparent 1.2px),
+                radial-gradient(circle at 80% 30%, rgba(255,255,255,.035) 0 1px, transparent 1.2px);
+            background-size: 120px 120px, 160px 160px, 200px 200px;
+            opacity: .25;
+            filter: blur(.2px);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, rgba(0,162,255,.18), rgba(124,58,237,.20));
+            border-radius: 999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, rgba(0,162,255,.45), rgba(124,58,237,.35));
+        }
+
+        #webgl-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+            opacity: .75;
+        }
+
+        #loader {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background:
+                radial-gradient(circle at center, rgba(0,162,255,.12) 0%, rgba(3,8,22,1) 54%, rgba(2,6,17,1) 100%);
+        }
+
+        .loader-ring {
+            width: 92px;
+            height: 92px;
+            border-radius: 999px;
+            background:
+                conic-gradient(from 180deg, rgba(0,162,255,0), rgba(0,162,255,1), rgba(255,255,255,.9), rgba(0,162,255,0));
+            padding: 2px;
+            animation: spin 1.2s linear infinite;
+            box-shadow: 0 0 70px rgba(0,162,255,.18);
+        }
+
+        .loader-ring > div {
+            width: 100%;
+            height: 100%;
+            border-radius: 999px;
+            background: rgba(3, 10, 26, .96);
+            display: grid;
+            place-items: center;
+            backdrop-filter: blur(18px);
+        }
+
+        .loader-dot {
+            width: 26px;
+            height: 26px;
+            border-radius: 999px;
+            background: radial-gradient(circle at 30% 30%, #ffffff 0%, #00a2ff 50%, rgba(0,162,255,.08) 72%);
+            box-shadow: 0 0 30px rgba(0,162,255,.45);
+            animation: pulse 1.25s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(.72); opacity: .7; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+
+        .glass-header {
+            background: rgba(6, 12, 26, .52);
+            border: 1px solid rgba(255,255,255,.08);
+            backdrop-filter: blur(24px) saturate(170%);
+            -webkit-backdrop-filter: blur(24px) saturate(170%);
+            box-shadow: 0 12px 40px rgba(0,0,0,.18);
+        }
+
+        .glass-panel {
+            background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.028));
+            border: 1px solid rgba(144, 208, 255, .16);
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            box-shadow: 0 24px 80px rgba(0,0,0,.26), inset 0 1px 0 rgba(255,255,255,.05);
+        }
+
+        .soft-border {
+            position: relative;
+        }
+        .soft-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(0,162,255,.36), rgba(255,255,255,.08), rgba(124,58,237,.30));
+            -webkit-mask:
+                linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: .65;
+        }
+
+        .chat-bubble-user {
+            background:
+                linear-gradient(135deg, rgba(0,162,255,.98), rgba(0,122,255,.88) 55%, rgba(2,87,186,.94));
+            box-shadow: 0 16px 35px rgba(0,162,255,.24), inset 0 1px 0 rgba(255,255,255,.12);
+            border: 1px solid rgba(255,255,255,.15);
+        }
+
+        .chat-bubble-bot {
+            background:
+                linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+            border: 1px solid rgba(165, 214, 255, .15);
+            box-shadow: 0 18px 40px rgba(2, 10, 24, .25), inset 0 1px 0 rgba(255,255,255,.04);
+        }
+
+        .markdown-body {
+            font-size: .97rem;
+            line-height: 1.95;
+            color: #e7effa;
+            word-break: break-word;
+        }
+
+        .markdown-body p {
+            margin-bottom: .8em;
+        }
+
+        .markdown-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .markdown-body a {
+            color: #66c2ff;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .markdown-body strong {
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .markdown-body ul, .markdown-body ol {
+            margin-right: 1.4em;
+            margin-bottom: 1em;
+            padding: 0;
+        }
+
+        .markdown-body ul { list-style: disc; }
+        .markdown-body ol { list-style: decimal; }
+        .markdown-body li { margin-bottom: .25em; }
+
+        .markdown-body pre {
+            background: rgba(8, 12, 24, .96);
+            border-radius: 1rem;
+            padding: 1rem;
+            margin: 1em 0;
+            overflow-x: auto;
+            border: 1px solid rgba(255,255,255,.08);
+            direction: ltr;
+            text-align: left;
+            position: relative;
+        }
+
+        .markdown-body code {
+            font-family: 'Cascadia Code', 'Consolas', monospace;
+            font-size: .86rem;
+        }
+
+        .markdown-body p code {
+            background: rgba(0, 162, 255, .14);
+            color: #8dd6ff;
+            padding: .16rem .42rem;
+            border-radius: .45rem;
+        }
+
+        textarea {
+            resize: none;
+            overflow-y: hidden;
+            min-height: 44px;
+            max-height: 150px;
+        }
+
+        .suggestion-card {
+            position: relative;
+            overflow: hidden;
+            transition: transform .22s ease, border-color .22s ease, background .22s ease, box-shadow .22s ease;
+        }
+
+        .suggestion-card::after {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(0,162,255,.16), transparent 38%);
+            opacity: 0;
+            transition: opacity .2s ease;
+            pointer-events: none;
+        }
+
+        .suggestion-card:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 18px 30px rgba(0,0,0,.18);
+        }
+
+        .suggestion-card:hover::after {
+            opacity: 1;
+        }
+
+        .floating-chip {
+            background: rgba(255,255,255,.05);
+            border: 1px solid rgba(255,255,255,.08);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        .composer {
+            background:
+                linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.035));
+            border: 1px solid rgba(165,214,255,.14);
+            box-shadow: 0 18px 45px rgba(0,0,0,.22);
+        }
+
+        .tiny-label {
+            letter-spacing: .02em;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="loader-ring">
+            <div>
+                <div class="loader-dot"></div>
+            </div>
+        </div>
+        <div class="mt-5 text-sm text-gray-300/80 tracking-wide">در حال آماده‌سازی سُها...</div>
+    </div>
+
+    <header class="fixed top-0 left-0 w-full z-50 px-4 md:px-6 pt-4">
+        <div class="max-w-[1220px] mx-auto glass-header rounded-[1.65rem] px-4 md:px-5 py-3 md:py-4">
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl flex items-center justify-center soft-border bg-white/5 overflow-hidden">
+                        <img src="1781973177850.jpg" alt="Soha" class="w-full h-full object-cover rounded-2xl">
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg md:text-xl font-black text-white">سُها</span>
+                            <span class="inline-flex items-center gap-1 text-[11px] md:text-xs text-emerald-300/90 bg-emerald-400/10 border border-emerald-300/15 px-2 py-1 rounded-full">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                                آنلاین
+                            </span>
+                        </div>
+                        <div class="text-xs md:text-sm text-gray-300/70 mt-1 truncate">
+                            دستیار هوشمند با پیشنهادهای رندوم، پاسخ‌های سریع و طراحی نرم و دلبر
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 md:gap-3">
+                    <button onclick="refreshSuggestions()" class="floating-chip text-xs md:text-sm text-skyblue hover:text-white transition-colors px-3 md:px-4 py-2 rounded-full flex items-center gap-2">
+                        <i class="fas fa-dice"></i>
+                        <span class="hidden sm:inline">پیشنهاد جدید</span>
+                    </button>
+                    <button onclick="clearChat()" class="floating-chip text-gray-400 hover:text-red-300 transition-colors px-3 md:px-4 py-2 rounded-full" title="پاک کردن تاریخچه">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                    <a href="index.html" class="floating-chip text-sm text-gray-300 hover:text-white transition-colors flex items-center gap-2 px-3 md:px-4 py-2 rounded-full">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="hidden sm:inline">بازگشت</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <canvas id="webgl-canvas"></canvas>
+
+    <main class="relative z-10 w-full h-screen flex flex-col px-3 md:px-6 pt-[6.8rem] pb-4 md:pb-5">
+        <div id="chat-container" class="glass-panel soft-border w-full max-w-[1220px] mx-auto h-full rounded-[2rem] md:rounded-[2.4rem] flex flex-col overflow-hidden opacity-0">
+
+            <div id="chat-box" class="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6 space-y-5 md:space-y-6 scroll-smooth">
+
+                <div id="welcome-screen" class="flex flex-col items-center justify-center h-full text-center space-y-5 md:space-y-6 py-8 md:py-10 transition-opacity duration-500">
+                    <div class="relative">
+                        <div class="absolute inset-0 rounded-[2.2rem] bg-skyblue/15 blur-2xl scale-110"></div>
+                        <div class="relative w-24 h-24 md:w-28 md:h-28 rounded-[2.2rem] bg-white/6 border border-skyblue/20 flex items-center justify-center overflow-hidden soft-border">
+                            <img src="1781973177850.jpg" alt="Soha" class="w-full h-full object-cover rounded-[2.2rem] p-1.5">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <h2 class="text-2xl md:text-3xl font-bold text-white">چطور می‌توانم کمک کنم؟</h2>
+                        <p class="text-sm md:text-base text-gray-300/75 max-w-xl leading-7 px-2">
+                            از پیشنهادهای آماده استفاده کن یا هر چیزی که توی ذهنت هست را بنویس؛ سُها با لحنی نرم، دقیق و دوست‌داشتنی پاسخ می‌دهد.
+                        </p>
+                    </div>
+
+                    <div class="w-full max-w-3xl mt-4 md:mt-6">
+                        <div class="flex items-center justify-between gap-3 mb-3 px-1">
+                            <span class="tiny-label text-xs md:text-sm text-gray-400">پیشنهادهای رندوم برای شروع گفتگو</span>
+                            <button type="button" onclick="refreshSuggestions()" class="floating-chip text-xs md:text-sm text-skyblue hover:text-white transition-colors px-3 py-1.5 rounded-full flex items-center gap-2">
+                                <i class="fas fa-sparkles"></i>
+                                پیشنهاد تازه
+                            </button>
+                        </div>
+                        <div id="suggestions-box" class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                            <div class="glass-panel p-4 rounded-[1.4rem] text-right text-sm text-gray-400/70 border border-dashed border-skyblue/20 animate-pulse">
+                                در حال ساخت پیشنهادها...
+                            </div>
+                            <div class="glass-panel p-4 rounded-[1.4rem] text-right text-sm text-gray-400/70 border border-dashed border-skyblue/20 animate-pulse">
+                                در حال ساخت پیشنهادها...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="p-3 md:p-5 border-t border-white/10 bg-gradient-to-b from-white/5 to-white/[0.03]">
+                <div class="composer relative flex items-end w-full rounded-[1.65rem] px-2 py-2 md:px-3 md:py-3 focus-within:border-skyblue/40 transition-all">
+                    <div class="hidden md:flex items-center gap-2 px-4 py-2 ml-1 text-xs text-gray-400 floating-chip rounded-full">
+                        <i class="fas fa-wand-magic-sparkles text-skyblue"></i>
+                        Shift+Enter برای خط جدید
+                    </div>
+
+                    <textarea id="user-input" rows="1" class="w-full bg-transparent text-white px-4 py-2 outline-none placeholder-gray-500 font-light text-sm md:text-base resize-none" placeholder="چیزی بپرسید..."></textarea>
+
+                    <button id="send-btn" class="w-11 h-11 md:w-12 md:h-12 rounded-[1rem] bg-gradient-to-br from-skyblue via-skyblue to-blue-700 text-white flex items-center justify-center hover:scale-105 hover:from-white hover:to-white hover:text-skyblue transition-all duration-300 flex-shrink-0 shadow-lg shadow-skyblue/20 mb-0.5 mr-1">
+                        <i class="fas fa-paper-plane transform -translate-x-0.5 translate-y-0.5"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        /* =========================================
+           1. Initialization & 3D Background
+           ========================================= */
+        window.onload = () => {
+            gsap.to("#loader", {
+                opacity: 0,
+                duration: 0.45,
+                delay: 0.25,
+                onComplete: () => {
+                    document.getElementById('loader').style.display = 'none';
+                    gsap.to("#chat-container", { opacity: 1, y: 0, duration: 0.85, ease: "power3.out" });
+                    setTimeout(() => generateInitialSuggestions(), 250);
+                }
+            });
+        };
+
+        const canvas = document.getElementById('webgl-canvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const countX = 65, countY = 65;
+        const numParticles = countX * countY;
+        const positions = new Float32Array(numParticles * 3);
+        const colors = new Float32Array(numParticles * 3);
+        const colorSky = new THREE.Color('#00a2ff');
+        const colorWhite = new THREE.Color('#ffffff');
+
+        let index = 0;
+        for (let x = 0; x < countX; x++) {
+            for (let y = 0; y < countY; y++) {
+                positions[index * 3] = x * 1.45 - (countX * 1.45) / 2;
+                positions[index * 3 + 1] = 0;
+                positions[index * 3 + 2] = y * 1.45 - (countY * 1.45) / 2;
+
+                const mixedColor = colorSky.clone().lerp(colorWhite, (x / countX));
+                colors[index * 3] = mixedColor.r;
+                colors[index * 3 + 1] = mixedColor.g;
+                colors[index * 3 + 2] = mixedColor.b;
+                index++;
+            }
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: 0.22,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const particleMesh = new THREE.Points(geometry, material);
+        scene.add(particleMesh);
+        camera.position.set(0, 20, 35);
+        particleMesh.rotation.x = Math.PI / 4;
+        camera.lookAt(0, 0, 0);
+
+        let mouseX = 0, mouseY = 0;
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.03;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.03;
+        });
+
+        const clock = new THREE.Clock();
+        function animateMesh() {
+            const elapsedTime = clock.getElapsedTime();
+            const positionAttribute = geometry.attributes.position;
+            let i = 0;
+            for (let x = 0; x < countX; x++) {
+                for (let y = 0; y < countY; y++) {
+                    const wave1 = Math.sin(x * 0.2 + elapsedTime * 1.5) * 2.5;
+                    const wave2 = Math.cos(y * 0.2 + elapsedTime * 1.2) * 2.5;
+                    positionAttribute.setY(i, wave1 + wave2);
+                    i++;
+                }
+            }
+            positionAttribute.needsUpdate = true;
+            particleMesh.rotation.y = elapsedTime * 0.03;
+            camera.position.x += (mouseX - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY + 20 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
+            renderer.render(scene, camera);
+            requestAnimationFrame(animateMesh);
+        }
+        animateMesh();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        /* =========================================
+           2. GapGPT OpenAI-Compatible API Logic
+           ========================================= */
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const suggestionsBox = document.getElementById('suggestions-box');
+
+        marked.setOptions({
+            highlight: function(code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    return hljs.highlight(code, { language: lang }).value;
+                }
+                return hljs.highlightAuto(code).value;
+            },
+            breaks: true
+        });
+
+        const API_KEY = "sk-wyL1vkmWk1A0MBwsodR1E1oKRpLu8YvBR7JQRhv5NN4nOfs6";
+        const MODEL_NAME = "gemini-2.5-flash-lite";
+        const API_URL = "https://api.gapgpt.app/v1/chat/completions";
+
+        const systemMessage = {
+            role: "system",
+            content: "تو یک دستیار هوش مصنوعی بسیار باهوش، مودب، ظریف و دلبر به نام سها (Soha) هستی. همیشه به زبان فارسی روان، حرفه‌ای و صمیمی پاسخ بده. پاسخ‌ها را تمیز، دقیق و خوش‌خوان بنویس. برای کد، خروجی را در قالب مارک‌داون و بلاک کد ارائه بده."
+        };
+
+        let chatHistory = [];
+
+        const suggestionIconPool = [
+            'fa-code', 'fa-brain', 'fa-rocket', 'fa-wand-magic-sparkles',
+            'fa-database', 'fa-mobile-screen-button', 'fa-shapes', 'fa-chart-line',
+            'fa-palette', 'fa-laptop-code', 'fa-robot', 'fa-sitemap'
+        ];
+
+        const localSuggestionPool = [
+            'یک تابع پایتون بنویس که اعداد اول را پیدا کند',
+            'تفاوت بین WebGL و Three.js چیست؟',
+            'یک بازی مار با جاوااسکریپت بساز',
+            'چطور یک سایت سریع‌تر و سبک‌تر داشته باشم؟',
+            'برای یادگیری هوش مصنوعی از کجا شروع کنم؟',
+            'یک رزومه حرفه‌ای برای برنامه‌نویس بنویس',
+            'چند ایده برای پروژه‌های کوچک و جذاب بده',
+            'یک API ساده با Flask بساز',
+            'یک صفحه فرود مدرن با HTML و CSS طراحی کن',
+            'چگونه خطاهای JavaScript را بهتر دیباگ کنم؟',
+            'یک برنامه مدیریت کارها با Tailwind بساز',
+            'تفاوت React و Vue را ساده توضیح بده',
+            'یک لوگوی مینیمال برای استارتاپ طراحی کن',
+            '۱۰ ایده برای کسب درآمد آنلاین بده',
+            'چطور از SQL Injection جلوگیری کنیم؟',
+            'یک چت‌بات ساده با پایتون بساز',
+            'مزایای استفاده از TypeScript چیست؟',
+            'یک اسکریپت برای مرتب کردن فایل‌ها بنویس'
+        ];
+
+        const scrollToBottom = () => {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        };
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function pickRandomItems(list, count) {
+            const pool = [...list];
+            const result = [];
+            while (pool.length && result.length < count) {
+                const idx = Math.floor(Math.random() * pool.length);
+                result.push(pool.splice(idx, 1)[0]);
+            }
+            return result;
+        }
+
+        function normalizeSuggestionText(text) {
+            return String(text || '')
+                .replace(/^[-•*\d.\)\s]+/, '')
+                .replace(/^["'«»`]+|["'«»`]+$/g, '')
+                .trim();
+        }
+
+        function parseSuggestionsFromModel(rawText) {
+            if (!rawText) return [];
+            let cleaned = String(rawText).trim();
+            cleaned = cleaned.replace(/```json/gi, '```').replace(/```/g, '').trim();
+
+            const match = cleaned.match(/\[[\s\S]*\]/);
+            if (match) cleaned = match[0];
+
+            try {
+                const parsed = JSON.parse(cleaned);
+                if (Array.isArray(parsed)) {
+                    return parsed.map(normalizeSuggestionText).filter(Boolean).slice(0, 4);
+                }
+            } catch (e) {}
+
+            return cleaned
+                .split(/\n+/)
+                .map(line => normalizeSuggestionText(line))
+                .filter(line => line && line.length > 2)
+                .slice(0, 4);
+        }
+
+        function renderSuggestions(items, useGenerated = false) {
+            if (!suggestionsBox) return;
+
+            const safeItems = (Array.isArray(items) ? items : [])
+                .map(normalizeSuggestionText)
+                .filter(Boolean)
+                .slice(0, 4);
+
+            if (!safeItems.length) {
+                suggestionsBox.innerHTML = `
+                    <div class="glass-panel p-4 rounded-[1.4rem] text-right text-sm text-gray-400/70 border border-dashed border-skyblue/20">
+                        فعلاً پیشنهادی پیدا نشد. دوباره تلاش کن.
+                    </div>
+                    <div class="glass-panel p-4 rounded-[1.4rem] text-right text-sm text-gray-400/70 border border-dashed border-skyblue/20">
+                        فعلاً پیشنهادی پیدا نشد. دوباره تلاش کن.
+                    </div>
+                `;
+                return;
+            }
+
+            suggestionsBox.innerHTML = safeItems.map((text, index) => {
+                const icon = suggestionIconPool[(Math.floor(Math.random() * suggestionIconPool.length) + index) % suggestionIconPool.length];
+                return `
+                    <button type="button" data-suggestion="${encodeURIComponent(text)}"
+                        class="suggestion-card glass-panel p-4 rounded-[1.4rem] text-right hover:bg-skyblue/10 transition-all text-sm text-gray-300 hover:text-white group border border-white/10 hover:border-skyblue/25 text-pretty">
+                        <i class="fas ${icon} text-skyblue mb-2 group-hover:scale-110 transition-transform"></i>
+                        <p class="leading-7">${escapeHtml(text)}</p>
+                        ${useGenerated ? '<span class="mt-3 inline-flex items-center gap-1 text-[11px] text-skyblue/80 bg-skyblue/10 border border-skyblue/20 px-2 py-1 rounded-full"><i class="fas fa-sparkles"></i>جدید</span>' : ''}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        async function generateInitialSuggestions() {
+            if (!suggestionsBox) return;
+
+            suggestionsBox.innerHTML = `
+                <div class="glass-panel p-4 rounded-[1.4rem] text-right text-sm text-gray-400/70 border border-dashed border-skyblue/20 animate-pulse">
+                    در حال ساخت پیشنهادهای جدید...
+                </div>
+                <div class="glass-panel p-4 rounded-[1.4rem] text-right text-sm text-gray-400/70 border border-dashed border-skyblue/20 animate-pulse">
+                    در حال ساخت پیشنهادهای جدید...
+                </div>
+            `;
+
+            const suggestionPrompt = `
+فقط و فقط یک JSON Array معتبر از 4 پیشنهاد کوتاه فارسی برای شروع گفتگو با یک دستیار هوش مصنوعی برگردان.
+قوانین:
+- فقط JSON array
+- هیچ توضیح اضافه، شماره‌گذاری، بولت، یا متن بیرون از JSON نباشد
+- هر مورد حداکثر 8 تا 12 کلمه
+- متنوع، جذاب، امروزی و غیرتکراری باشد
+- موضوعات: برنامه‌نویسی، طراحی، هوش مصنوعی، تولید محتوا، یادگیری، وب، خلاقیت
+- خروجی نمونه: ["...", "...", "...", "..."]
+`.trim();
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: MODEL_NAME,
+                        messages: [
+                            {
+                                role: "system",
+                                content: "تو یک مولد پیشنهاد کوتاه برای شروع چت هستی. فقط خروجی JSON معتبر بده و هیچ متن اضافی ننویس."
+                            },
+                            {
+                                role: "user",
+                                content: suggestionPrompt
+                            }
+                        ],
+                        temperature: 1.15,
+                        top_p: 0.95,
+                        max_tokens: 160
+                    })
+                });
+
+                const data = await response.json();
+                const rawText = data?.choices?.[0]?.message?.content || '';
+                const modelSuggestions = parseSuggestionsFromModel(rawText);
+
+                if (modelSuggestions.length) {
+                    renderSuggestions(modelSuggestions, true);
+                    return;
+                }
+            } catch (error) {
+                console.warn('Suggestion generation failed, using local fallback:', error);
+            }
+
+            renderSuggestions(pickRandomItems(localSuggestionPool, 4), false);
+        }
+
+        window.refreshSuggestions = function() {
+            generateInitialSuggestions();
+        };
+
+        function hideWelcomeScreen() {
+            if (welcomeScreen && welcomeScreen.style.display !== 'none') {
+                gsap.to(welcomeScreen, {
+                    opacity: 0,
+                    duration: 0.3,
+                    onComplete: () => welcomeScreen.style.display = 'none'
+                });
+            }
+        }
+
+        window.copyToClipboard = function(btn, text) {
+            navigator.clipboard.writeText(decodeURIComponent(text)).then(() => {
+                const icon = btn.querySelector('i');
+                if (!icon) return;
+                icon.className = 'fas fa-check text-green-400';
+                setTimeout(() => icon.className = 'fas fa-copy', 2000);
+            });
+        };
+
+        if (suggestionsBox) {
+            suggestionsBox.addEventListener('click', (event) => {
+                const button = event.target.closest('[data-suggestion]');
+                if (!button) return;
+                const text = decodeURIComponent(button.dataset.suggestion || '');
+                if (text) sendSuggestion(text);
+            });
+        }
+
+        function appendMessage(text, sender) {
+            hideWelcomeScreen();
+            const isUser = sender === 'user';
+            const msgDiv = document.createElement('div');
+
+            msgDiv.className = `flex items-end gap-3 w-full ${isUser ? 'justify-start' : 'justify-end'}`;
+
+            const avatarHtml = isUser ? '' : `
+                <img src="1781973177850.jpg" class="w-8 h-8 md:w-10 md:h-10 rounded-2xl object-cover border border-skyblue/30 flex-shrink-0 shadow-lg shadow-skyblue/10" alt="Soha">
+            `;
+
+            const bubbleClass = isUser
+                ? 'chat-bubble-user text-white rounded-[1.9rem] rounded-tr-sm px-5 py-3 max-w-[90%] md:max-w-[75%] text-sm md:text-base leading-relaxed'
+                : 'glass-panel chat-bubble-bot markdown-body rounded-[1.9rem] rounded-tl-sm px-5 md:px-6 py-4 max-w-[95%] md:max-w-[85%] relative group';
+
+            let contentHtml = '';
+            if (isUser) {
+                contentHtml = text.replace(/\n/g, '<br>');
+            } else {
+                const encodedText = encodeURIComponent(text);
+                contentHtml = marked.parse(text);
+                contentHtml += `
+                    <button onclick="copyToClipboard(this, '${encodedText}')" class="absolute top-3 left-3 text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity bg-white/10 hover:bg-white/15 p-1.5 rounded-lg border border-white/10" title="کپی پیام">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                `;
+            }
+
+            if (isUser) {
+                msgDiv.innerHTML = `<div class="${bubbleClass}">${contentHtml}</div>`;
+            } else {
+                msgDiv.innerHTML = `<div class="${bubbleClass}">${contentHtml}</div>${avatarHtml}`;
+            }
+
+            chatBox.appendChild(msgDiv);
+            scrollToBottom();
+
+            msgDiv.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+
+            gsap.fromTo(msgDiv, { opacity: 0, y: 15, scale: 0.985 }, { opacity: 1, y: 0, scale: 1, duration: 0.38, ease: "power2.out" });
+        }
+
+        function showTypingIndicator() {
+            hideWelcomeScreen();
+            const id = 'typing-' + Date.now();
+            const typingDiv = document.createElement('div');
+            typingDiv.id = id;
+            typingDiv.className = "flex items-end gap-3 w-full justify-end";
+
+            typingDiv.innerHTML = `
+                <div class="glass-panel px-5 py-4 rounded-3xl rounded-tl-none flex items-center gap-2">
+                    <div class="w-1.5 h-1.5 bg-skyblue rounded-full animate-bounce"></div>
+                    <div class="w-1.5 h-1.5 bg-skyblue rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    <div class="w-1.5 h-1.5 bg-skyblue rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                </div>
+                <img src="1781973177850.jpg" class="w-8 h-8 md:w-10 md:h-10 rounded-2xl object-cover border border-skyblue/30 flex-shrink-0 shadow-lg shadow-skyblue/10" alt="Soha">
+            `;
+
+            chatBox.appendChild(typingDiv);
+            scrollToBottom();
+            return id;
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            appendMessage(text, 'user');
+
+            userInput.value = '';
+            userInput.style.height = 'auto';
+
+            chatHistory.push({
+                role: "user",
+                content: text
+            });
+
+            const typingId = showTypingIndicator();
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: MODEL_NAME,
+                        messages: [
+                            systemMessage,
+                            ...chatHistory
+                        ],
+                        temperature: 0.75,
+                        max_tokens: 2048
+                    })
+                });
+
+                const data = await response.json();
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) typingEl.remove();
+
+                if (!response.ok) {
+                    const msg = data?.error?.message || data?.message || `خطای سرور: ${response.status}`;
+                    appendMessage(msg, 'bot');
+                    console.error('API Error:', data);
+                    return;
+                }
+
+                const botReply = data?.choices?.[0]?.message?.content;
+                if (botReply) {
+                    appendMessage(botReply, 'bot');
+                    chatHistory.push({
+                        role: "assistant",
+                        content: botReply
+                    });
+                } else if (data?.error) {
+                    appendMessage(`خطا: ${data.error.message || 'پاسخ نامعتبر از سرور'}`, 'bot');
+                    console.error("API Error:", data.error);
+                } else {
+                    appendMessage("متاسفانه پاسخی دریافت نشد.", 'bot');
+                    console.warn("Unexpected response:", data);
+                }
+            } catch (error) {
+                const loaderEle = document.getElementById(typingId);
+                if (loaderEle) loaderEle.remove();
+                appendMessage("خطا در ارتباط شبکه یا پاسخ‌نگرفتن از سرور. لطفاً اتصال اینترنت و تنظیمات API را بررسی کن.", 'bot');
+                console.error("Fetch Error:", error);
+            }
+        }
+
+        window.sendSuggestion = function(text) {
+            userInput.value = text;
+            sendMessage();
+        };
+
+        window.clearChat = function() {
+            if (confirm('آیا مطمئن هستید که می‌خواهید تاریخچه گفتگو پاک شود؟')) {
+                chatBox.innerHTML = '';
+                chatHistory = [];
+                welcomeScreen.style.display = 'flex';
+                welcomeScreen.style.opacity = '1';
+                chatBox.appendChild(welcomeScreen);
+                generateInitialSuggestions();
+            }
+        };
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight < 150 ? this.scrollHeight : 150) + 'px';
+            if (this.value === '') this.style.height = 'auto';
+        });
+
+        setTimeout(() => userInput.focus(), 1000);
+    </script>
+</body>
+</html>
